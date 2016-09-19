@@ -1,0 +1,17 @@
+library(XML)
+library(RCurl)
+library(bitops)
+
+url<-"D:\\importantbk\\learning\\meshr\\NLM\\desc2017.xml"
+
+xmldoc<-xmlTreeParse(url)
+
+rootNote<-xmlRoot(xmldoc)
+
+data<-xmlSApply(rootNote,function(x)xmlSApply(x,xmlValue))
+
+data<-data.frame(t(data),rownames=F)
+
+
+
+
