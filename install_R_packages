@@ -1,0 +1,22 @@
+## Install R package is generally divided into two approaches:
+## 1. install.packages() in R console, through which we should first specify a package server
+## 2. source("https://bioconductor.org/biocLite.R")
+## biocLite()
+
+## When comes to R bioconductor, sometimes we will need to install some packages which are not so widely used, and subsequently it does not contain a zip install files, all we have downloaded from biocLite() is ***.tar.gz files which are compiled in UNIX and can not be interpreted in windows, so we have to fix this
+
+
+
+
+## 1. The most important step is install the Rtools which provide the compiling environment needed.
+
+## 2. After the installation of Rtools, we have to modify the environment values . Make sure the PATH value are like follows:
+C:\R\R-3.2.5\bin\x64;C:\Rtools\bin;C:\Rtools\mingw_64\bin;C:\Rtools\gcc-4.6.3\bin;%SystemRoot%\system32;%SystemRoot%;%SystemRoot%\System32\Wbem;%SYSTEMROOT%\System32\WindowsPowerShell\v1.0\
+
+## 3. copy the downloaded tar.gz files to "C:\R\R-3.2.5\bin\x64", be careful this path should already added to the path environment value.
+
+## 4. open cmd window in WIN7(win+R, cmd), change the directory to "C:\R\R-3.2.5\bin\x64"
+
+## 5. execute "rcmd INSTALL **.tar.gz", and the packages will be installed.
+
+## There is a pitfull here: at first I install the R in the default directory "C:\Program Files\R\R-3.2.5\bin\x64", when I add this path to PATH environment value, it seems that the environment does not recognize this path at all. Each execution will stop at "C:\Program " is not recognized in the system. So I guess in the path it not allow the space occur. So I change the installation directory of R, avoid space in the path, and finally it works...
