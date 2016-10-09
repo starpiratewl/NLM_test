@@ -1,0 +1,63 @@
+## test data
+## 1.
+data(geneid.cummeRbund)                ## all the genes
+data(sig.geneid.cummeRbund)            ## DEGs
+
+dim(geneid.cummeRbund)                 ## to see how many genes
+## [1] 303   2
+
+dim(sig.geneid.cummeRbund)
+## [1] 104   2
+
+head(geneid.cummeRbund)
+##    SYMBOL ENTREZID
+## 1   OR4F5    79501
+## 2  OR4F16    81399
+## 3  SAMD11   148398
+## 4  KLHL17   339451
+## 5 PLEKHN1    84069
+## 6   ISG15     9636
+
+
+
+head(sig.geneid.cummeRbund)
+##    SYMBOL ENTREZID
+## 1  KLHL17   339451
+## 2 PLEKHN1    84069
+## 3    AGRN   375790
+## 4  TTLL10   254173
+## 5  SCNN1D     6339
+## 6    VWA1    64856
+
+
+library("fdrtool") 
+library("MeSH.Hsa.eg.db")
+
+# like topGO, it need to construct a MeSHHyperGParams object to specify all the parameters when do enrichment.
+meshParams <- new("MeSHHyperGParams", #
+                  geneIds = sig.geneid.cummeRbund[, 2], #
+                  universeGeneIds = geneid.cummeRbund[, 2], #
+                  annotation = "MeSH.Hsa.eg.db", #
+                  category = "C", # 类似于GO的BP, MF, CC之类的分类
+                  database = "gendoo", #可以是gendoo, gene2pubmed或者RBBH
+                  pvalueCutoff = 0.05, #
+                  pAdjust = "none") ## pAdjust设置成none只是因为这个例子很小，大多数的时候，我们可以把它设置成BH，QV或者FDR
+
+
+
+
+
+13605515876胡
+
+
+
+
+
+
+
+
+
+
+
+
+
