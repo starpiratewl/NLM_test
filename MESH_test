@@ -38,16 +38,80 @@ meshParams <- new("MeSHHyperGParams", #
                   geneIds = sig.geneid.cummeRbund[, 2], #
                   universeGeneIds = geneid.cummeRbund[, 2], #
                   annotation = "MeSH.Hsa.eg.db", #
-                  category = "C", # 类似于GO的BP, MF, CC之类的分类
-                  database = "gendoo", #可以是gendoo, gene2pubmed或者RBBH
+                  category = "C", # like the classification of BP,MF,CC in GO
+                  database = "gendoo", #can be gendoo, gene2pubmed or RBBH
                   pvalueCutoff = 0.05, #
-                  pAdjust = "none") ## pAdjust设置成none只是因为这个例子很小，大多数的时候，我们可以把它设置成BH，QV或者FDR
+                  pAdjust = "none") ## pAdjust is set to none because this is really a very limited example,most of the times we can set it to BH, QV or FDR.
+                  
+                  
+meshR <- meshHyperGTest(meshParams)             ## hypergeometry calculation of pvalue
+
+meshR                                           ## to see what kind of object the mesh is, is it like a GO?
+##MeSH enrichment analysis for category Diseases 
+##Annotation package used:  MeSH.Hsa.eg.db 
+##The correspondance is retrived from:  gendoo 
+##Number of MeSH terms identified:  9 
+
+head(summary(meshR))
+##       MESHID       Pvalue OddsRatio ExpCount Count Size              MESHTERM GENEID SOURCEID
+##15774 D009361 0.0002619206  3.942771 11.32673    21   33 Neoplasm Invasiveness   1576     <NA>
+##15775 D009361 0.0002619206  3.942771 11.32673    21   33 Neoplasm Invasiveness   6279     <NA>
+##15776 D009361 0.0002619206  3.942771 11.32673    21   33 Neoplasm Invasiveness   2778     <NA>
+##15777 D009361 0.0002619206  3.942771 11.32673    21   33 Neoplasm Invasiveness    894     <NA>
+##15778 D009361 0.0002619206  3.942771 11.32673    21   33 Neoplasm Invasiveness   2524     <NA>
+##15779 D009361 0.0002619206  3.942771 11.32673    21   33 Neoplasm Invasiveness   7306     <NA>
 
 
 
 
 
-13605515876胡
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## another example
+library(mesh)
+library(fdrtool)
+library(MeSH.Hsa.eg.db)
+allgene <- select(MeSH.Hsa.eg.db, columns="GENEID", keytype="SOURCEID", keys="gene2pubmed")
+siggene <- sig.geneid.cummeRbund[, 2]
+meshParams <- new("MeSHHyperGParams", 
+                  geneIds = siggene,
+                  universeGeneIds = allgene,
+                  annotation = "MeSH.Hsa.eg.db", 
+                  category = "G", 
+                  database = "gene2pubmed",
+                  pvalueCutoff = 0.05,
+                  pAdjust = "QV")
+output <- meshHyperGTest(meshParams)
+save.pdf(output)  ## save all the pdf files, be careful to use this...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+13605515876 hu
 
 
 
