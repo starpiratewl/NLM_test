@@ -80,14 +80,14 @@ head(summary(meshR))
 
 
 ## another example
-library(mesh)
+library(meshr)
 library(fdrtool)
 library(MeSH.Hsa.eg.db)
-allgene <- select(MeSH.Hsa.eg.db, columns="GENEID", keytype="SOURCEID", keys="gene2pubmed")
+allgene <- select(MeSH.Hsa.eg.db, columns="GENEID", keytype="SOURCEDB", keys="gene2pubmed")
 siggene <- sig.geneid.cummeRbund[, 2]
 meshParams <- new("MeSHHyperGParams", 
                   geneIds = siggene,
-                  universeGeneIds = allgene,
+                  universeGeneIds = allgene[,1],
                   annotation = "MeSH.Hsa.eg.db", 
                   category = "G", 
                   database = "gene2pubmed",
