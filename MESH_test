@@ -110,9 +110,27 @@ save.pdf(output)  ## save all the pdf files, be careful to use this...
 
 
 
+################################
+##
+################################
+keytypes(MeSH.Hsa.eg.db)
+##[1] "GENEID"       "MESHID"       "MESHCATEGORY" "SOURCEID"     "SOURCEDB"    
+keytypes(MeSH.Aca.eg.db)
+##[1] "GENEID"       "MESHID"       "MESHCATEGORY" "SOURCEID"     "SOURCEDB"    
+keytypes(MeSH.Bsu.168.eg.db)
+##[1] "GENEID"       "MESHID"       "MESHCATEGORY" "SOURCEID"     "SOURCEDB"   
+keytypes(MeSH.Syn.eg.db)
+##[1] "GENEID"       "MESHID"       "MESHCATEGORY" "SOURCEID"     "SOURCEDB" 
 
 
-
+head(select(MeSH.Hsa.eg.db,keys = "gene2pubmed", columns = c("GENEID","MESHID","MESHCATEGORY","SOURCEID","SOURCEDB"),keytype = "SOURCEDB"))
+##  GENEID  MESHID MESHCATEGORY SOURCEID    SOURCEDB
+##1      1 D000251            D 19056867 gene2pubmed
+##2      1 D000293            M 21591266 gene2pubmed
+##3      1 D000328            M 18706098 gene2pubmed
+##4      1 D000328            M 19056867 gene2pubmed
+##5      1 D000328            M 23418544 gene2pubmed
+##6      1 D000328            M  8889549 gene2pubmed
 
 
 
