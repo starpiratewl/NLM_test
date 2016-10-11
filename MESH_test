@@ -111,7 +111,7 @@ save.pdf(output)  ## save all the pdf files, be careful to use this...
 
 
 ################################
-##
+## attributes of some databases
 ################################
 keytypes(MeSH.Hsa.eg.db)
 ##[1] "GENEID"       "MESHID"       "MESHCATEGORY" "SOURCEID"     "SOURCEDB"    
@@ -131,6 +131,37 @@ head(select(MeSH.Hsa.eg.db,keys = "gene2pubmed", columns = c("GENEID","MESHID","
 ##4      1 D000328            M 19056867 gene2pubmed
 ##5      1 D000328            M 23418544 gene2pubmed
 ##6      1 D000328            M  8889549 gene2pubmed
+
+
+
+
+###################################################################
+## get the genesymbol according to geneid, use mygene here
+###################################################################
+library(mygene)
+getGene(1)
+##$`_id`
+##[1] "1"
+
+##$entrezgene
+##[1] 1
+
+##$name
+##[1] "alpha-1-B glycoprotein"
+
+##$symbol
+##[1] "A1BG"
+
+##$taxid
+##[1] 9606
+
+
+
+
+
+
+
+
 
 
 
