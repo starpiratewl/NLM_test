@@ -1,5 +1,6 @@
 ## test data
 ## 1.
+library("meshr")
 data(geneid.cummeRbund)                ## all the genes
 data(sig.geneid.cummeRbund)            ## DEGs
 
