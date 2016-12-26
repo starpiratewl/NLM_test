@@ -1,0 +1,183 @@
+###################################################################################
+## Supplementary data                                                          ####
+##      The R script reproducing ANOVA and PCA by using data deposited in GEO  ####
+###################################################################################
+
+# Download the three categories of required data from 
+#   http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE30668.
+
+# 1. parameter (in the Supplementary file list of the top page)
+# 2. normalized cell data (found as a Supplementary file in each chip data's page)
+# 3. expression levels (can be obtained by clicking the View full table button in each chip data's page). 
+
+# The data categories should be kept separated by storing the data in different directories.
+ #  The calculations will take place in the three directories one by one. 
+
+#####
+# 1 #  start the R and locate the working directory to that include "GSE30668_chip_parameter_SN.txt"
+#####
+
+      parameters<- read.table(file="D:\\importantbk\\learning\\meshr\\Analysis\\RatGSE30668_chip_parameter_SN.txt", sep="\t", header=T)
+      params <- data.matrix(parameters)[,2:13]
+      save(params, file="parameters.RData")
+
+##### 
+# 2 # change the working directory to that include all the normalized probe-level PM data, such as "GSM760646.txt". 
+#####
+      d <- getwd()
+      setwd(paste0(d, "/Normalized_Data"))
+      nfiles<- list.files(pattern=".txt$")
+      NumChip <- length(nfiles)
+      ListData<-colnames(params)   
+      groups <- sort(rep(1:3, 4)) # for example,
+      groups<-as.factor(groups)   ; NumGroups <- length(levels(groups))
+
+  save.image("parameters.RData")
+
+# reading  matrix data from the normalized PM data files
+
+   for (chips in 1:NumChip){
+      nameofdata <- strsplit(nfiles[chips], ".txt")[[1]][1]
+      nameoftxt <-nfiles[chips]
+      DataTobeRead <- read.table(file=nameoftxt, sep="\t", na.strings=" ", fill=T, row.names=1, header=F)
+         GeneContents <- rownames(DataTobeRead)
+         NumContents <- length(GeneContents)
+         b<-dim( DataTobeRead); a<-unlist( DataTobeRead); dim(a)<-b; rownames(a)<-GeneContents
+         DataTobeRead<-a ; rm(a, b, GeneContents) # removing the list structure of the table
+      # discarding data below the lowere limit and saturating point
+
+         lowerlimit <- params[1, chips]
+         upperlimit <- params[3, chips]
+         DataTobeRead[DataTobeRead < lowerlimit] <- NA
+         DataTobeRead[DataTobeRead > upperlimit] <- NA
+
+      assign ( nameofdata ,  DataTobeRead)    # storing the matrix under the name of the chip 
+      }    # chips
+
+ save.image("datasets.RData")
+
+#######################################################
+###                ANOVA calculation                ###
+#######################################################
+
+# objects
+   NumCel <- dim(get(strsplit(nfiles[1], ".txt")[[1]] ))[2]
+   ANOVAres <- array(NA, dim=c(NumContents, 2))
+   colnames(ANOVAres) <- c("group", "interaction")
+   rownames(ANOVAres) <- rownames(get(strsplit(nfiles[1], ".txt")[[1]] ))
+
+# preparing the factors that explains data
+   experiments<-inlinedata <- 1:(NumCel*NumChip)+NA
+
+   for (chips in 1:NumChip){
+      experiments[1:NumCel+(chips-1)*NumCel] <- groups[chips] }
+
+   cells <- rep( 1:NumCel, NumChip)
+   cells<-as.factor(cells); experiments<-as.factor(experiments) # specify the type of objects
+
+# uptaking each gene data and ANOVA
+   for (genes in 1:NumContents){
+    for (chips in 1:NumChip){
+    inlinedata[1:NumCel+(chips-1)*NumCel] <- get(strsplit(nfiles[chips], ".txt")[[1]] )[genes, ]} 
+   ###### balancing the test by removing incomplete measurements ###############
+      na_cells <-get(strsplit(nfiles[1], ".txt")[[1]] )[genes, ]
+       for (chips in 2:NumChip){
+          na_cells <- na_cells+get(strsplit(nfiles[chips], ".txt")[[1]] )[genes, ]} #uptake
+      na_cells <- na_cells*0+1   # comprlete cells will become one
+      Num_non_na_cells<-sum(na_cells, na.rm=T)
+      balancing_filter <- rep(na_cells*0, NumChip)
+      inlinedata <-inlinedata+ balancing_filter   # removing      
+
+   if (Num_non_na_cells > 1){
+      #### end of balancing ###########
+
+      AOVres <- summary(aov( inlinedata ~ cells+experiments+cells:experiments))
+      ANOVAres[genes,"group"] <- AOVres[[1]]["experiments","Pr(>F)" ]
+      ANOVAres[genes,"interaction"] <-AOVres[[1]]["cells:experiments","Pr(>F)" ]
+   }   }  # if (Num_non_na_cells   and  for (genes
+
+hist(ANOVAres[,"group"], breaks=c(0:100/101,1))
+save(ANOVAres, file="ANOVAres.rdata")
+
+#####
+# 3 #  Set the working directory on the same one where the expression levels are located.
+#####
+    # The files could be obtained by clicking "view full table" button in the GEO page
+    # and stored as a text file, such as "GSM760657.acc.cgi.txt"
+
+# master data
+    NumChip<-12
+   list_p_files<- list.files(pattern=".txt$")
+     mastermatrix <-array(NA, dim=c( dim(ANOVAres)[1], NumChip))
+      for (chip in 1:NumChip)   {
+         data_read<-read.table(file=list_p_files[chip], header = T, sep = "\t", skip=4, fill=T)
+          mastermatrix[ ,chip] <- data_read[1:31099,4]
+                }
+
+   colnames(mastermatrix) <- list_p_files
+   gn<- rownames(mastermatrix) <- rownames(data_read)[1:31099]
+   controls<-which(substring(gn, 1, 4)=="AFFX")
+   row.names(mastermatrix) <- gn
+
+ p_values <- ANOVAres[,"group"]
+
+ groups<- c("T", "A", "C")
+
+ representative<- cbind( apply(mastermatrix[, 1:4], 1, mean, na.rm=T), apply(mastermatrix[, 1:4+4], 1, mean, na.rm=T), apply(mastermatrix[, 1:4+8], 1, mean, na.rm=T))
+	colnames(representative)<-groups
+
+
+#######################################################
+###                   PCA                           ###
+#######################################################
+# The pc's and the loadings are estimated on the correlation matrixes among representative data of selected genes.
+ 
+# selecting genes 
+   # to those positive in ANOVA
+
+   selected_genes<-which(ANOVAres[,"group"] < 0.001/2) 
+   data_subjected <- t(representative)*0
+   data_subjected[, selected_genes] <- t(representative)[, selected_genes]
+
+   means<-data_subjected[2, ]
+   data_subjected<-sweep(data_subjected, 2, means) 	
+
+   data_subjected[, controls] <-0 
+  data_subjected[which(is.na(data_subjected))] <- 0
+
+ svdres<-svd(data_subjected)  # SVD
+
+  data_master<-t(mastermatrix)*0
+  data_master[, selected_genes] <-t(mastermatrix)[, selected_genes]
+  data_master<-sweep(data_master, 2, means)
+  data_master[, controls]<- 0
+
+ pcs <- data_master %*% svdres$v 
+  pcs<-pcs/sqrt(length(selected_genes))
+
+ loadings <- t(data_subjected)%*% svdres$u
+  loadings <- loadings /sqrt(3)
+
+#######################################################
+###                   output                        ###
+#######################################################
+
+plot(loadings, col="gray50", xlab="PC1", ylab="PC2")
+     label <- c("T","T","T","T","A","A","A","A","C","C","C","C")
+
+   for(i in 1:length(label)){
+      text(labels=label[[i]][1], x=pcs[i, 1], y=pcs[i, 2], col="Blue4") }
+
+  abline(h=0,  lty=1, col="White"); abline(v=0,  lty=1, col="White"); abline(h=0, lty=3); abline(v=0, lty=3)
+  abline(h=-.1, lty=3); abline(h=.1, lty=3); abline(v=-.16, lty=3); abline(v=.16, lty=3)
+
+#######################################################
+###                  information                    ###
+#######################################################
+
+# <title> ANOVA to PCA </title>
+# <subtitle> Supplement Data </subtitle>
+# <version> R2.4.1 & R 2.11.1 </version>
+# <date> 19 July 2011 </date>
+# <author> Tomokazu Konishi </author>
+# <EOF>
