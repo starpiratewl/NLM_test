@@ -1,0 +1,528 @@
+###################### Environment ###########################
+## R : 3.1.0 (2014-04-10)
+## Bioconductor : 2.14
+## OS : Mac OS X 10.9.2 (Marvericks)
+##############################################################
+
+##############################################################
+##################### Package loading ########################
+##############################################################
+install.packages("RSQLite", type="source", dep=T)   # v 0.11.4
+install.packages("tagcloud", type="source", dep=T) # v 0.1
+install.packages("ggplot2", type="source", dep=T) # v 0.9.3.1
+
+source("http://bioconductor.org/biocLite.R")
+
+biocLite("AnnotationDbi", dep=T, type="source")     # v 1.26.0
+biocLite("rat2302.db", dep=T, type="source")        # v 2.14.0
+biocLite("org.Rn.eg.db", dep=T, type="source")      # v 2.14.0
+biocLite("GOstats", dep=T, type="source")           # v 2.30.0
+biocLite("GO.db", dep=T, type="source")             # v 2.14.0
+biocLite("org.MeSH.Mdo.db", dep=T, type="source")   # v 1.0.0
+biocLite("org.MeSH.Pae.PAO1.db", dep=T, type="source")   # v 1.0.0
+biocLite("org.MeSH.Rno.db", dep=T, type="source")   # v 1.0.0
+biocLite("meshr", dep=T, type="source")             # v 1.0.0
+biocLite("MeSH.db", dep=T, type="source")           # v 1.0.0
+
+library("RSQLite")
+library("tagcloud")
+library("rat2302.db")
+library("org.Rn.eg.db")
+library("GO.db")
+library("GOstats")
+library("MeSH.db")
+library("org.MeSH.Rno.db")
+library("meshr")
+library("org.MeSH.Pae.PAO1.db")
+library("ggplot2")
+
+###############################################################
+########## Case-Study1: Caloric restriction rat ###############
+###############################################################
+# DEG of previous study (t-test + Q-value)
+DEG1 <- read.csv("Rat/DEGlist.csv")
+
+# No. of DEG
+length(which(DEG1[,2] < 0.2)) # 505
+DEGprobe1 <- as.character(DEG1[which(DEG1[,2] < 0.2), 1]) # Affy Probe
+Symbol1 <- mget(DEGprobe1, env=rat2302SYMBOL) # Gene Symbol
+
+# Gene ID of DEG
+ID1 <- unlist(mget(DEGprobe1, env=rat2302ENTREZID)) # Entrez Gene ID
+ID1 <- ID1[which(!is.na(ID1))]
+
+# Gene ID of all genes
+allprobe1 <- as.character(DEG1[, 1])
+allID1 <- unlist(mget(allprobe1, env=rat2302ENTREZID))
+allID1 <- allID1[which(!is.na(allID1))]
+
+# DE gene data
+gendoo <- select(org.MeSH.Rno.db, columns=columns(org.MeSH.Rno.db), keytype=keytypes(org.MeSH.Rno.db), keys=ID1)
+gendoo <- unique(gendoo[which(gendoo[,5] == "gendoo"), ])
+gene2pubmed <- select(org.MeSH.Rno.db, columns=columns(org.MeSH.Rno.db), keytype=keytypes(org.MeSH.Rno.db), keys=ID1)
+gene2pubmed <- unique(gene2pubmed[which(gene2pubmed[,5] == "gene2pubmed"), ])
+
+# All gene data
+all.gendoo <- select(org.MeSH.Rno.db, columns=columns(org.MeSH.Rno.db), keytype=keytypes(org.MeSH.Rno.db), keys=allID1)
+all.gendoo <- unique(all.gendoo[which(all.gendoo[,5] == "gendoo"), ])
+all.gene2pubmed <- select(org.MeSH.Rno.db, columns=columns(org.MeSH.Rno.db), keytype=keytypes(org.MeSH.Rno.db), keys=allID1)
+all.gene2pubmed <- unique(all.gene2pubmed[which(all.gene2pubmed[,5] == "gene2pubmed"), ])
+
+############################ 1. gendoo ###########################
+ctg1 <- c("A", "B", "C", "D", "G")
+geneIds.gendoo <- unique(gendoo[,1])
+universeGeneIds.gendoo <- unique(all.gendoo[,1])
+output.gendoo <- as.list(1:length(ctg1))
+names(output.gendoo) <- ctg1
+
+for(i in 1:length(ctg1)){
+	print(i)
+	parameter <- new("MeSHHyperGParams",
+				  geneIds = geneIds.gendoo,
+		          universeGeneIds = universeGeneIds.gendoo,
+		          annotation = "org.MeSH.Rno.db",
+		          category = ctg1[i], database = "gendoo",
+		          pvalueCutoff = 0.1, pAdjust = "none")
+	output.gendoo[[i]] <- summary(meshHyperGTest(parameter))[,c(2,3)]
+}
+
+out.gd.A <- output.gendoo$A
+out.gd.B <- output.gendoo$B
+out.gd.C <- output.gendoo$C
+out.gd.D <- output.gendoo$D
+out.gd.G <- output.gendoo$G
+save(out.gd.A, file="./Enrichment/output.A.gendoo.rda")
+save(out.gd.B, file="./Enrichment/output.B.gendoo.rda")
+save(out.gd.C, file="./Enrichment/output.C.gendoo.rda")
+save(out.gd.D, file="./Enrichment/output.D.gendoo.rda")
+save(out.gd.G, file="./Enrichment/output.G.gendoo.rda")
+
+########################## gene2pubmed ########################
+ctg2 <- c("A", "C", "D", "E", "I")
+geneIds.gene2pubmed <- unique(gene2pubmed[,1])
+universeGeneIds.gene2pubmed <- unique(all.gene2pubmed[,1])
+output.gene2pubmed <- as.list(1:length(ctg2))
+names(output.gene2pubmed) <- ctg2
+
+for(i in 1:length(ctg2)){
+	print(i)
+	parameter <- new("MeSHHyperGParams",
+				  geneIds = geneIds.gene2pubmed,
+		          universeGeneIds = universeGeneIds.gene2pubmed,
+		          annotation = "org.MeSH.Rno.db",
+		          category = ctg2[i], database = "gene2pubmed",
+		          pvalueCutoff = 0.1, pAdjust = "none")
+	output.gene2pubmed[[i]] <- summary(meshHyperGTest(parameter))[,c(2,3)]
+}
+
+
+######################## Data saving #########################
+out.g2p.A <- output.gene2pubmed$A
+out.g2p.C <- output.gene2pubmed$C
+out.g2p.D <- output.gene2pubmed$D
+out.g2p.E <- output.gene2pubmed$E
+out.g2p.I <- output.gene2pubmed$I
+save(out.g2p.A, file="./Enrichment/output.A.gene2pubmed.rda")
+save(out.g2p.C, file="./Enrichment/output.C.gene2pubmed.rda")
+save(out.g2p.D, file="./Enrichment/output.D.gene2pubmed.rda")
+save(out.g2p.E, file="./Enrichment/output.E.gene2pubmed.rda")
+save(out.g2p.I, file="./Enrichment/output.I.gene2pubmed.rda")
+
+############################# GO #############################
+paraBP <- new("GOHyperGParams", geneIds=unique(ID1), universeGeneIds=unique(allID1), annotation="rat2302", ontology="BP", pvalueCutoff=0.05, conditional=F, testDirection="over")
+paraMF <- new("GOHyperGParams", geneIds=unique(ID1), universeGeneIds=unique(allID1), annotation="rat2302", ontology="MF", pvalueCutoff=0.05, conditional=F, testDirection="over")
+paraCC <- new("GOHyperGParams", geneIds=unique(ID1), universeGeneIds=unique(allID1), annotation="rat2302", ontology="CC", pvalueCutoff=0.05, conditional=F, testDirection="over")
+
+BP <- summary(hyperGTest(paraBP))[,c(7,2)]
+MF <- summary(hyperGTest(paraMF))[,c(7,2)]
+CC <- summary(hyperGTest(paraCC))[,c(7,2)]
+
+##################### tagcloud visualization #################
+# MeSH
+input.files.MeSH <- as.list(1:10)
+input.files.MeSH[[1]] <- out.gd.A
+input.files.MeSH[[2]] <- out.gd.B
+input.files.MeSH[[3]] <- out.gd.C
+input.files.MeSH[[4]] <- out.gd.D
+input.files.MeSH[[5]] <- out.gd.G
+input.files.MeSH[[6]] <- out.g2p.A
+input.files.MeSH[[7]] <- out.g2p.C
+input.files.MeSH[[8]] <- out.g2p.D
+input.files.MeSH[[9]] <- out.g2p.E
+input.files.MeSH[[10]] <- out.g2p.I
+output.files.MeSH <- c("./Tagcloud/tagcloud.A.gendoo",
+	              "./Tagcloud/tagcloud.B.gendoo",
+	              "./Tagcloud/tagcloud.C.gendoo",
+	              "./Tagcloud/tagcloud.D.gendoo",
+	              "./Tagcloud/tagcloud.G.gendoo",
+	              "./Tagcloud/tagcloud.A.gene2pubmed",
+	              "./Tagcloud/tagcloud.C.gene2pubmed",
+	              "./Tagcloud/tagcloud.D.gene2pubmed",
+	              "./Tagcloud/tagcloud.E.gene2pubmed",
+	              "./Tagcloud/tagcloud.I.gene2pubmed")
+titles.MeSH <- c("A (gendoo)", "B (gendoo)", "C (gendoo)", "D (gendoo)", "G (gendoo)", "A (gene2pubmed)", "C (gene2pubmed)", "D (gene2pubmed)", "E (gene2pubmed)", "I (gene2pubmed)")
+size.MeSH <- c(1.1, 1.1, 0.9, 0.5, 0.9, 1.6, 1.7, 1.5, 0.6, 1.3, 1.2)
+
+for(i in 1:length(input.files.MeSH)){
+	data <- input.files.MeSH[[i]]
+
+	if(nrow(data) != 1){
+		# png output
+		png(file=paste0(output.files.MeSH[i], ".png"), width=700, height=700)
+			tagcloud(as.character(data[,1]), -log10(as.numeric(data[,2])), col=smoothPalette(-log10(as.numeric(data[,2]))), algorithm= "oval", scale=size.MeSH[i])
+			par(ps=20)
+			text(0.8,0.97,titles.MeSH[i])
+		dev.off()
+
+		# eps output
+		postscript(
+			  file=paste0(output.files.MeSH[i], ".eps"), width = 7, height = 7,
+		  	  horizontal = FALSE, onefile = FALSE, paper = "special",
+		  	  family="Times"
+		)
+			tagcloud(as.character(data[,1]), -log10(as.numeric(data[,2])), col=smoothPalette(-log10(as.numeric(data[,2]))), algorithm= "oval", scale=size.MeSH[i])
+			par(ps=20)
+			text(0.8,0.97,titles.MeSH[i])
+		dev.off()		
+	}else{
+		# png output
+		png(file=paste0(output.files.MeSH[i], ".png"), width=700, height=700)
+			plot.new()
+			par(ps=16)
+			par(font.main = 1) 
+			title(paste0("                                                  ", titles.MeSH[i]))
+			par(ps=25)
+			text(0.5,0.5,as.character(data[,1]))
+		dev.off()
+
+		# eps output
+		postscript(
+			  file=paste0(output.files.MeSH[i], ".eps"), width = 7, height = 7,
+		  	  horizontal = FALSE, onefile = FALSE, paper = "special",
+		  	  family="Times"
+		)
+			plot.new()
+			par(ps=16)
+			par(font.main = 1) 
+			title(paste0("                                                  ", titles.MeSH[i]))
+			par(ps=25)
+			text(0.5,0.5,as.character(data[,1]))
+		dev.off()
+
+	}
+}
+
+
+# Gene Ontology
+input.files.GO <- as.list(1:3)
+input.files.GO[[1]] <- BP
+input.files.GO[[2]] <- MF
+input.files.GO[[3]] <- CC
+output.files.GO <- c("./Tagcloud/tagcloud.BP.GO",
+	              "./Tagcloud/tagcloud.MF.GO",
+	              "./Tagcloud/tagcloud.CC.GO")
+titles.GO <- c("BP (Gene Ontology)", "MF (Gene Ontology)", "CC (Gene Ontology)")
+size.GO <- c(0.26, 0.55, 0.75)
+BP.119.226 <- c("metabolic process", "oxidation reduction", "lipid biosynthetic process", "lipid metabolic process", "fatty acid biosynthetic process", "carbohydrate metabolic process", "response to organic cyclic substance", "cell proliferation", "brown fat cell differentiation", "glycolysis", "cell migration", "response to ethanol", "response to organic substance", "pyruvate metabolic process", "response to glucose stimulus", "acetyl-CoA metabolic process", "triglyceride biosynthetic process", "triglyceride metabolic process", "glycogen metabolic process", "acetyl-CoA biosynthetic process from pyruvate", "cellular response to starvation", "sterol biosynthetic process", "cholesterol biosynthetic process", "response to testosterone stimulus", "biosynthetic process", "glucose homeostasis", "lactation", "immune response", "negative regulation of apoptosis", "inflammatory response", "BMP signaling pathway", "response to cytokine stimulus", "forebrain development", "response to mechanical stimulus", "negative regulation of angiogenesis", "neutrophil chemotaxis")
+
+for(i in 1:length(input.files.GO)){
+	data <- input.files.GO[[i]]
+	colors <- smoothPalette(-log10(as.numeric(data[,2])))
+
+	# Red in BP
+	if(i == 1){
+		common <- intersect(as.vector(data[,1]),BP.119.226)
+		for(j in 1:length(common)){
+			colors[which(data[, 1] == common[j])] <- "#FF0000"
+		}
+	}
+
+	if(nrow(data) != 1){
+		# png output
+		png(file=paste0(output.files.GO[i], ".png"), width=700, height=700)
+			tagcloud(as.character(data[,1]), -log10(as.numeric(data[,2])), col=colors, algorithm= "oval", scale=size.GO[i])
+			par(ps=20)
+			text(0.8,0.97,titles.GO[i])
+		dev.off()
+
+		# eps output
+		postscript(
+			  file=paste0(output.files.GO[i], ".eps"), width = 7, height = 7,
+		  	  horizontal = FALSE, onefile = FALSE, paper = "special",
+		  	  family="Times"
+		)
+			tagcloud(as.character(data[,1]), -log10(as.numeric(data[,2])), col=colors, algorithm= "oval", scale=size.GO[i])
+			par(ps=20)
+			text(0.,0.97,titles.GO[i])
+		dev.off()
+	}
+}
+
+############### Merge all figure as fig9.eps #################
+size.MeSH.merge <- c(1.1, 3.2, 2.5, 2.1, 2.8,
+	            120, 120, 8, 120, 120) / 2.5
+size.GO.merge <- c(0.5, 0.7, 1.4) / 1.5
+
+postscript(
+	file="./Tagcloud/Fig9.eps", width = 7, height = 7,
+	horizontal = FALSE, onefile = FALSE, paper = "special",
+	family="Times"
+)
+
+# Insert 13 figure to 5 * 3
+par(mfrow=c(5, 3))
+
+# MeSH
+for(i in 1:length(input.files.MeSH)){
+	data <- input.files.MeSH[[i]]
+
+	if(nrow(data) != 1){
+			tagcloud(as.character(data[,1]), -log10(as.numeric(data[,2])), col=smoothPalette(-log10(as.numeric(data[,2]))), algorithm= "oval", scale=size.MeSH.merge[i])
+			par(ps=9)
+			text(0.7,0.97,titles.MeSH[i])
+			par(ps=3)
+	}else{
+			plot.new()
+			par(ps=9)
+			par(font.main = 1) 
+			title(paste0("                      ", titles.MeSH[i]))
+			par(ps=8)
+			text(0.5,0.6,as.character(data[,1]))
+			par(ps=3)
+	}
+}
+
+# GO
+for(i in 1:length(input.files.GO)){
+	data <- input.files.GO[[i]]
+	colors <- smoothPalette(-log10(as.numeric(data[,2])))
+
+	# Red in BP
+	if(i == 1){
+		common <- intersect(as.vector(data[,1]),BP.119.226)
+		for(j in 1:length(common)){
+			colors[which(data[, 1] == common[j])] <- "#FF0000"
+		}
+	}
+
+	tagcloud(as.character(data[,1]), -log10(as.numeric(data[,2])), col=colors, algorithm= "oval", scale=size.GO.merge[i])
+	par(ps=9)
+	text(0.8,0.97,titles.GO[i])
+	par(ps=3)
+}
+
+dev.off()
+
+
+
+
+##############################################################
+############## Case-Study2: Pseudomonas aeruginosa ###########
+##############################################################
+GeneLocus <- c(
+"PA3303", "PA0392", "PA4077", "PA5199", "PA5366",
+"PA5200", "PA0016", "PA4942", "PA3014", "PA4398", "PA5528",
+"PA1805", "PA3016", "PA4223", "PA4960", "PA0374", "PA3013",
+"PA5471", "PA0502", "PA3194", "PA1775", "PA0427", "PA4222",
+"PA5369", "PA2018", "PA5285", "PA2604", "PA2019", "PA4050")
+
+Function <- c(
+"control", "Conserved hypothetical", "Transcriptional regulator",
+"Two-component sensor", "Phosphate transport",
+"Two-component response regulator", "Potassium uptake",
+"Protease subunit", "Fatty acid oxidation", "Two-component sensor",
+"Hypothetical", "Peptidyl-prolyl isomerase", "Hypothetical",
+"Transport", "Amino acid metabolism", "Cell division",
+"Fatty acide oxidation", "Hypothetical", "Biotin biosynthesis",
+"Carbohydrate metabolism", "Cytoplasmic membrane protein",
+"Multidrug efflux", "Transport", "Phosphate transport",
+"Multidrug efflux", "Hypothetical", "Conserved hypothetical",
+"Multidrug efflux", "Phospholipid biosynthesis")
+
+GeneID <- c(
+882468, 878514, 878707, 880300, 881628,
+880301, 879255, 877755, 878680, 881355, 877964,
+878369, 879098, 880074, 878558, 883078, 880523,
+877632, 878654, 882909, 877590, 877851, 880073,
+880528, 878882, 878098, 882310, 878839, 879074)
+
+PAO1 <- readLines("./Pseudomonas/PAO1.txt")
+
+BP <- list()
+MF <- list()
+CC <- list()
+length(BP) <- length(GeneLocus)
+length(MF) <- length(GeneLocus)
+length(CC) <- length(GeneLocus)
+
+for(i in 1:length(GeneLocus)){
+	print(i)
+	locus <- grep(GeneLocus[i], PAO1)
+	vect <- unlist(strsplit(PAO1[locus[1]], "\\|"))
+	if(length(grep("biological_process", PAO1[locus[1]], value=T)) != 0){
+		print("BP")
+		BP[[i]] <- vect[grep("biological_process", vect) + 2]
+	}
+	if(length(grep("molecular_function", PAO1[locus[1]], value=T)) != 0){
+		print("MF")
+		MF[[i]] <- vect[grep("molecular_function", vect) + 2]
+	}
+	if(length(grep("cellular_component", PAO1[locus[1]], value=T)) != 0){
+		print("CC")
+		CC[[i]] <- vect[grep("cellular_component", vect) + 2]
+	}
+}
+
+# 変な箇所だけ修正
+BP[[21]] <- c("-")
+MF[[21]] <- c("-")
+CC[[21]] <- c("-")
+
+MeSH <- select(org.MeSH.Pae.PAO1.db, columns=columns(org.MeSH.Pae.PAO1.db), keytype=keytypes(org.MeSH.Pae.PAO1.db), keys=GeneID)
+
+####################### 11階層 ########################
+## A階層 ##
+A <- MeSH[which(MeSH[,3] == "A"), ]
+term <- select(MeSH.db, columns=c("MESHID", "MeSHTERM"), keytype="MESHID", keys=A[, 2])
+A <- merge(term, A, by.x ="MESHID", by.y ="MESHID")[,c(3,1,2,4,5)]
+A <- A[,c(1,3)]
+## B階層 ##
+B <- MeSH[which(MeSH[,3] == "B"), ]
+term <- select(MeSH.db, columns=c("MESHID", "MeSHTERM"), keytype="MESHID", keys=B[, 2])
+B <- merge(term, B, by.x ="MESHID", by.y ="MESHID")[,c(3,1,2,4,5)]
+B <- B[,c(1,3)]
+## C階層 ##
+C <- MeSH[which(MeSH[,3] == "C"), ]
+term <- select(MeSH.db, columns=c("MESHID", "MeSHTERM"), keytype="MESHID", keys=C[, 2])
+C <- merge(term, C, by.x ="MESHID", by.y ="MESHID")[,c(3,1,2,4,5)]
+C <- C[,c(1,3)]
+## D階層 ##
+D <- MeSH[which(MeSH[,3] == "D"), ]
+term <- select(MeSH.db, columns=c("MESHID", "MeSHTERM"), keytype="MESHID", keys=D[, 2])
+D <- merge(term, D, by.x ="MESHID", by.y ="MESHID")[,c(3,1,2,4,5)]
+D <- D[,c(1,3)]
+## E階層 ##
+E <- MeSH[which(MeSH[,3] == "E"), ]
+term <- select(MeSH.db, columns=c("MESHID", "MESHTERM"), keytype="MESHID", keys=E[, 2])
+E <- merge(term, E, by.x ="MESHID", by.y ="MESHID")[,c(3,1,2,4,5)]
+E <- E[,c(1,3)]
+## G階層 ##
+G <- MeSH[which(MeSH[,3] == "G"), ]
+term <- select(MeSH.db, columns=c("MESHID", "MESHTERM"), keytype="MESHID", keys=G[, 2])
+G <- merge(term, G, by.x ="MESHID", by.y ="MESHID")[,c(3,1,2,4,5)]
+G <- G[,c(1,3)]
+## H階層 ##
+H <- MeSH[which(MeSH[,3] == "H"), ]
+term <- select(MeSH.db, columns=c("MESHID", "MESHTERM"), keytype="MESHID", keys=H[, 2])
+H <- merge(term, H, by.x ="MESHID", by.y ="MESHID")[,c(3,1,2,4,5)]
+H <- H[,c(1,3)]
+## J階層 ##
+J <- MeSH[which(MeSH[,3] == "J"), ]
+term <- select(MeSH.db, columns=c("MESHID", "MESHTERM"), keytype="MESHID", keys=J[, 2])
+J <- merge(term, J, by.x ="MESHID", by.y ="MESHID")[,c(3,1,2,4,5)]
+J <- J[,c(1,3)]
+## L階層 ##
+L <- MeSH[which(MeSH[,3] == "L"), ]
+term <- select(MeSH.db, columns=c("MESHID", "MESHTERM"), keytype="MESHID", keys=L[, 2])
+L <- merge(term, L, by.x ="MESHID", by.y ="MESHID")[,c(3,1,2,4,5)]
+L <- L[,c(1,3)]
+## M階層 ##
+M <- MeSH[which(MeSH[,3] == "M"), ]
+term <- select(MeSH.db, columns=c("MESHID", "MESHTERM"), keytype="MESHID", keys=M[, 2])
+M <- merge(term, M, by.x ="MESHID", by.y ="MESHID")[,c(3,1,2,4,5)]
+M <- M[,c(1,3)]
+## N階層 ##
+N <- MeSH[which(MeSH[,3] == "N"), ]
+term <- select(MeSH.db, columns=c("MESHID", "MESHTERM"), keytype="MESHID", keys=N[, 2])
+N <- merge(term, N, by.x ="MESHID", by.y ="MESHID")[,c(3,1,2,4,5)]
+N <- N[,c(1,3)]
+
+
+Table <- matrix("-", nrow=29, ncol=17)
+colnames(Table) <- c(
+"GeneID", "LocusTag", "Description", "BP", "MF", "CC",
+"A", "B", "C", "D", "E", "G", "H", "J", "L", "M", "N" 
+)
+
+Table[,1] <- GeneID
+Table[,2] <- GeneLocus
+Table[,3] <- Function
+
+Table[,4] <- unlist(lapply(BP, function(x){paste(x, collapse = " / ")}))
+Table[,5] <- unlist(lapply(MF, function(x){paste(x, collapse = " / ")}))
+Table[,6] <- unlist(lapply(CC, function(x){paste(x, collapse = " / ")}))
+
+for(i in 1:length(GeneID)){
+	######## A (Anatomy) ########
+	if(length(which(GeneID[i] == A[,1])) != 0){
+		out <- levels(as.factor(A[which(A[,1] == GeneID[i]), 2]))
+		Table[i,7] <- paste(out, collapse = " / ")
+	}
+	######## B (Organisms) ########
+	if(length(which(GeneID[i] == B[,1])) != 0){
+		out <- levels(as.factor(B[which(B[,1] == GeneID[i]), 2]))
+		Table[i,8] <- paste(out, collapse = " / ")
+	}
+	######## C (Diseases) ########
+	if(length(which(GeneID[i] == C[,1])) != 0){
+		out <- levels(as.factor(C[which(C[,1] == GeneID[i]), 2]))
+		Table[i,9] <- paste(out, collapse = " / ")
+	}
+	######## D (Chemicals and Drugs) ########
+	if(length(which(GeneID[i] == D[,1])) != 0){
+		out <- levels(as.factor(D[which(D[,1] == GeneID[i]), 2]))
+		Table[i,10] <- paste(out, collapse = " / ")
+	}
+	######## E (Analytical, Diagnostic and Therapeutic Techniques and Equipment) ########
+	if(length(which(GeneID[i] == E[,1])) != 0){
+		out <- levels(as.factor(E[which(E[,1] == GeneID[i]), 2]))
+		Table[i,11] <- paste(out, collapse = " / ")
+	}
+	######## G (Phenomena and Processes) ########
+	if(length(which(GeneID[i] == G[,1])) != 0){
+		out <- levels(as.factor(G[which(G[,1] == GeneID[i]), 2]))
+		Table[i,12] <- paste(out, collapse = " / ")
+	}
+	######## H (Disciplines and Occupations) ########
+	if(length(which(GeneID[i] == H[,1])) != 0){
+		out <- levels(as.factor(H[which(H[,1] == GeneID[i]), 2]))
+		Table[i,13] <- paste(out, collapse = " / ")
+	}
+	######## J (Technology and Food and Beverages) ########
+	if(length(which(GeneID[i] == J[,1])) != 0){
+		out <- levels(as.factor(J[which(J[,1] == GeneID[i]), 2]))
+		Table[i,14] <- paste(out, collapse = " / ")
+	}
+	######## L (Information Science) ########
+	if(length(which(GeneID[i] == L[,1])) != 0){
+		out <- levels(as.factor(L[which(L[,1] == GeneID[i]), 2]))
+		Table[i,15] <- paste(out, collapse = " / ")
+	}
+	######## M (Persons) ########
+	if(length(which(GeneID[i] == M[,1])) != 0){
+		out <- levels(as.factor(M[which(M[,1] == GeneID[i]), 2]))
+		Table[i,16] <- paste(out, collapse = " / ")
+	}
+	######## N (Health Care) ########
+	if(length(which(GeneID[i] == N[,1])) != 0){
+		out <- levels(as.factor(N[which(N[,1] == GeneID[i]), 2]))
+		Table[i,17] <- paste(out, collapse = " / ")
+	}
+}
+
+write.table(Table, "./Pseudomonas/Table.txt", sep="|", quote=F, row.names=F)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
