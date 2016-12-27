@@ -39,6 +39,10 @@ library("ggplot2")
 ###############################################################
 ########## Case-Study1: Caloric restriction rat ###############
 ###############################################################
+setwd("D:\\importantbk\\learning\\meshr\\Analysis")
+setwd("D:/importantbk/learning/meshr/Analysis")
+
+
 # DEG of previous study (t-test + Q-value)
 DEG1 <- read.csv("Rat/DEGlist.csv")
 
