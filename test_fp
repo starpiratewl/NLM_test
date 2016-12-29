@@ -70,15 +70,15 @@ allID1 <- allID1[which(!is.na(allID1))]
 
 # DE gene data
 gendoo <- select(MeSH.Rno.eg.db, columns=columns(MeSH.Rno.eg.db), keytype=keytypes(MeSH.Rno.eg.db), keys=ID1)
-gendoo <- unique(gendoo[which(gendoo[,5] == "gendoo"), ])
+gendoo <- unique(gendoo[which(gendoo[,4] == "gendoo"), ])
 gene2pubmed <- select(MeSH.Rno.eg.db, columns=columns(MeSH.Rno.eg.db), keytype=keytypes(MeSH.Rno.eg.db), keys=ID1)
-gene2pubmed <- unique(gene2pubmed[which(gene2pubmed[,5] == "gene2pubmed"), ])
+gene2pubmed <- unique(gene2pubmed[which(gene2pubmed[,4] == "gene2pubmed"), ])
 
 # All gene data
 all.gendoo <- select(MeSH.Rno.eg.db, columns=columns(MeSH.Rno.eg.db), keytype=keytypes(MeSH.Rno.eg.db), keys=allID1)
-all.gendoo <- unique(all.gendoo[which(all.gendoo[,5] == "gendoo"), ])
+all.gendoo <- unique(all.gendoo[which(all.gendoo[,4] == "gendoo"), ])
 all.gene2pubmed <- select(MeSH.Rno.eg.db, columns=columns(MeSH.Rno.eg.db), keytype=keytypes(MeSH.Rno.eg.db), keys=allID1)
-all.gene2pubmed <- unique(all.gene2pubmed[which(all.gene2pubmed[,5] == "gene2pubmed"), ])
+all.gene2pubmed <- unique(all.gene2pubmed[which(all.gene2pubmed[,4] == "gene2pubmed"), ])
 
 ############################ 1. gendoo ###########################
 ctg1 <- c("A", "B", "C", "D", "G")
@@ -121,7 +121,7 @@ for(i in 1:length(ctg2)){
 	parameter <- new("MeSHHyperGParams",
 				  geneIds = geneIds.gene2pubmed,
 		          universeGeneIds = universeGeneIds.gene2pubmed,
-		          annotation = "org.MeSH.Rno.db",
+		          annotation = "MeSH.Rno.eg.db",
 		          category = ctg2[i], database = "gene2pubmed",
 		          pvalueCutoff = 0.1, pAdjust = "none")
 	output.gene2pubmed[[i]] <- summary(meshHyperGTest(parameter))[,c(2,3)]
