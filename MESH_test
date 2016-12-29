@@ -167,14 +167,42 @@ queryMany(xli, scopes="symbol", fields=c("uniprot", "ensembl.gene", "reporter"),
 
 
 
+###################################################################
+## test of select use of MeSH.XXX.eg.db packages
+###################################################################
+setwd("D:\\importantbk\\learning\\meshr\\Analysis")
+setwd("D:/importantbk/learning/meshr/Analysis")
 
 
+# DEG of previous study (t-test + Q-value)
+DEG1 <- read.csv("Rat/DEGlist.csv")
 
-13605515876 hu
+# No. of DEG
+length(which(DEG1[,2] < 0.2)) # 505
+DEGprobe1 <- as.character(DEG1[which(DEG1[,2] < 0.2), 1]) # Affy Probe
+Symbol1 <- mget(DEGprobe1, env=rat2302SYMBOL) # Gene Symbol
+
+# Gene ID of DEG
+ID1 <- unlist(mget(DEGprobe1, env=rat2302ENTREZID)) # Entrez Gene ID
+ID1 <- ID1[which(!is.na(ID1))]
+
+# Gene ID of all genes
+allprobe1 <- as.character(DEG1[, 1])
+allID1 <- unlist(mget(allprobe1, env=rat2302ENTREZID))
+allID1 <- allID1[which(!is.na(allID1))]
 
 
+test1 <- select(MeSH.Rno.eg.db, columns=columns(MeSH.Rno.eg.db), keytype=keytypes(MeSH.Rno.eg.db), keys="114766")
+test2 <- select(MeSH.Rno.eg.db, columns=columns(MeSH.Rno.eg.db), keytype="Geneid", keys="114766")
+test3 <- select(MeSH.Rno.eg.db, columns=columns(MeSH.Rno.eg.db), keytype="GENEID", keys=ID1[1])
 
-
+## they are all the same
+dim(test1)
+##[1] 243   5
+dim(test2)
+##[1] 243   5
+dim(test3)
+##[1] 243   5
 
 
 
