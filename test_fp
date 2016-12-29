@@ -31,10 +31,18 @@ library("org.Rn.eg.db")
 library("GO.db")
 library("GOstats")
 library("MeSH.db")
-library("org.MeSH.Rno.db")
+library("MeSH.Rno.eg.db")
 library("meshr")
-library("org.MeSH.Pae.PAO1.db")
+library("MeSH.Pae.PAO1.eg.db")
 library("ggplot2")
+
+
+##Please also note that org.MeSH.XXX.db -type
+##packages are renamed as MeSH.XXX.eg.db -type
+##packages by Bioconductor 3.1.
+
+## so I made a lot of modification here substitute the "org.MeSH.XX.db" with "MeSH.XXX.eg.db", and also in R libraries
+## the old "org.MeSH.XX.db" packages can be substituted with the new "MeSH.XXX.eg.db" packages
 
 ###############################################################
 ########## Case-Study1: Caloric restriction rat ###############
@@ -61,15 +69,15 @@ allID1 <- unlist(mget(allprobe1, env=rat2302ENTREZID))
 allID1 <- allID1[which(!is.na(allID1))]
 
 # DE gene data
-gendoo <- select(org.MeSH.Rno.db, columns=columns(org.MeSH.Rno.db), keytype=keytypes(org.MeSH.Rno.db), keys=ID1)
+gendoo <- select(MeSH.Rno.eg.db, columns=columns(MeSH.Rno.eg.db), keytype=keytypes(MeSH.Rno.eg.db), keys=ID1)
 gendoo <- unique(gendoo[which(gendoo[,5] == "gendoo"), ])
-gene2pubmed <- select(org.MeSH.Rno.db, columns=columns(org.MeSH.Rno.db), keytype=keytypes(org.MeSH.Rno.db), keys=ID1)
+gene2pubmed <- select(MeSH.Rno.eg.db, columns=columns(MeSH.Rno.eg.db), keytype=keytypes(MeSH.Rno.eg.db), keys=ID1)
 gene2pubmed <- unique(gene2pubmed[which(gene2pubmed[,5] == "gene2pubmed"), ])
 
 # All gene data
-all.gendoo <- select(org.MeSH.Rno.db, columns=columns(org.MeSH.Rno.db), keytype=keytypes(org.MeSH.Rno.db), keys=allID1)
+all.gendoo <- select(MeSH.Rno.eg.db, columns=columns(MeSH.Rno.eg.db), keytype=keytypes(MeSH.Rno.eg.db), keys=allID1)
 all.gendoo <- unique(all.gendoo[which(all.gendoo[,5] == "gendoo"), ])
-all.gene2pubmed <- select(org.MeSH.Rno.db, columns=columns(org.MeSH.Rno.db), keytype=keytypes(org.MeSH.Rno.db), keys=allID1)
+all.gene2pubmed <- select(MeSH.Rno.eg.db, columns=columns(MeSH.Rno.eg.db), keytype=keytypes(MeSH.Rno.eg.db), keys=allID1)
 all.gene2pubmed <- unique(all.gene2pubmed[which(all.gene2pubmed[,5] == "gene2pubmed"), ])
 
 ############################ 1. gendoo ###########################
@@ -84,7 +92,7 @@ for(i in 1:length(ctg1)){
 	parameter <- new("MeSHHyperGParams",
 				  geneIds = geneIds.gendoo,
 		          universeGeneIds = universeGeneIds.gendoo,
-		          annotation = "org.MeSH.Rno.db",
+		          annotation = "MeSH.Rno.eg.db",
 		          category = ctg1[i], database = "gendoo",
 		          pvalueCutoff = 0.1, pAdjust = "none")
 	output.gendoo[[i]] <- summary(meshHyperGTest(parameter))[,c(2,3)]
