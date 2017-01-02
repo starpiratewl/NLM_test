@@ -17,15 +17,18 @@
 # 1 #  start the R and locate the working directory to that include "GSE30668_chip_parameter_SN.txt"
 #####
 
-      parameters<- read.table(file="D:\\importantbk\\learning\\meshr\\Analysis\\RatGSE30668_chip_parameter_SN.txt", sep="\t", header=T)
+      parameters<- read.table(file="D:\\importantbk\\learning\\meshr\\GSE30668\\GSE30668_chip_parameter_SN.txt", sep="\t", header=T)
       params <- data.matrix(parameters)[,2:13]
       save(params, file="parameters.RData")
 
 ##### 
 # 2 # change the working directory to that include all the normalized probe-level PM data, such as "GSM760646.txt". 
 #####
-      d <- getwd()
-      setwd(paste0(d, "/Normalized_Data"))
+      ##d <- getwd()
+      ##setwd(paste0(d, "/Normalized_Data"))
+      
+      setwd("D:\\importantbk\\learning\\meshr\\GSE30668")
+      
       nfiles<- list.files(pattern=".txt$")
       NumChip <- length(nfiles)
       ListData<-colnames(params)   
