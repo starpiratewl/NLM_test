@@ -1,0 +1,97 @@
+source("http://bioconductor.org/biocLite.R")
+
+biocLite("affy")
+
+biocLite("Biobase")
+
+biocLite("tkWidgets")
+
+
+library(affy)
+
+## select the CEL files here ( notice the CEL files are downloaded form GEO)
+AffyData<-ReadAffy(widget=TRUE)
+
+exprsSet.RMA<-rma(AffyData)   ##用rma方法处理数据
+
+exp.RMA<-exprs(exprsSet.RMA)  ## exprsSet.MAS5<-mas5(AffyData)  ##用mas5方法处理数据
+
+
+write.exprs(exprsSet.RMA, file="mydata.txt")  ##结果保存
+
+hist(log2(intensity(AffyData[,4])),breaks=100,col="blue")    ##画芯片数据的直方图，因为实验数据变化范围大所以取log2，结果集中在6~8，大于10 的很少，说明样本仅少部分高表达，与实际吻合。
+
+
+par(mfrow=c(1,2))
+
+boxplot(AffyData,col="red")
+
+boxplot(data.frame(exp.RMA),col="blue") ## 画箱式图，比较数据分布情况
+
+plot(exp.RMA[,1:2],log="xy",pch=".",main="all")
+
+plot(pm(AffyData)[,1:2],log="xy",pch=".",main="pm")
+
+plot(mm(AffyData)[,1:2],log="xy",pch=".",main="mm")
+
+plot(exp.RMA[,1:2],pch=".",main="exp.RMA")  ## 散点图评价两个样本之间的数据差异
+
+
+library(genefilter)   ## 函数rowSds在genenfliter中
+
+rsd<-rowSds(exp.RMA)   ## 计算行的标准差
+
+sel<-order(rsd,decreasing=TRUE)[1:20]  ## 选择表达差异高的top20，order返回行号
+
+heatmap(exp.RMA[sel,],col=rainbow(256)) ## 画热图
+
+
+
+##之后我们获得了标准化后的表达谱数据，接下来我们可以利用limma package的算法对表达谱数据进行差异基因提取。
+
+##需要设置的参数包括表达谱数据的文件目录，case组和control组的数据，以及输出文件的文件名，这里默认为case_control_limma.txt。那么对于我们的样例文件，我们将其放置于F：\盘下，case组（treated with**）为9个，control组（treated without**）为10个，实现的代码如下：
+
+setwd("D:\\importantbk\\learning\\meshr\\limma_test")
+
+
+library(limma)
+
+##setwd("F:\\")
+
+##exp<-read.table("profile_normalized.txt",header=T,sep="\t")
+exp <- read.table("mydata.txt",header = T, sep = "\t")
+
+rownames(exp)<-exp[,1]
+
+exp<-exp[2:20]
+
+exp<-as.matrix(exp)
+
+ 
+
+samps<-factor(c(rep("case",9),rep("control",10)))
+
+design <- model.matrix(~0+samps) ;
+
+colnames(design) <- c("case","control") 
+
+fit <- lmFit(exp, design) 
+
+cont.matrix<-makeContrasts(case-control,levels=design) 
+
+fit2 <- contrasts.fit(fit, cont.matrix) 
+
+fit2 <- eBayes(fit2) 
+
+final<-topTable(fit2, coef=1, number=dim(exp)[1], adjust.method="BH", sort.by="B", resort.by="M")
+
+write.table(final,paste("case_control","_limma.txt"),quote=FALSE,sep="\t")
+
+
+
+
+
+
+
+
+
