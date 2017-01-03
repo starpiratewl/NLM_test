@@ -93,8 +93,9 @@ write.table(final,paste("case_control","_limma.txt"),quote=FALSE,sep="\t")
 ## convert the probeID to gene symbol
 setwd("D:\\importantbk\\learning\\meshr\\limma_test")
 
-de_tab <- read.csv(file = "case_control _limma.txt", sep = "\t", sringsAsFactors = F)
+de_tab <- read.csv(file = "case_control _limma.txt", sep = "\t", stringsAsFactors = F)
 
+## significant genes
 de_tab_f <- de_tab[de_tab$logFC > 1.5 | de_tab$logFC < -1.5,]
 
 probeID <- as.character(de_tab_f$X)
@@ -110,17 +111,57 @@ library(biomaRt)
 
 mart <- useMart("ENSEMBL_MART_ENSEMBL", dataset = "hsapiens_gene_ensembl", host="www.ensembl.org")
 
-gene_tab <- getBM(attributes=c('affy_hg_u133_plus_2', 'hgnc_symbol', 'chromosome_name','start_position','end_position', 'band'),filters = 'affy_hg_u133_plus_2', values = probeID, mart = mart)
+gene_tab <- getBM(attributes=c('affy_hg_u133_plus_2', 'hgnc_symbol', 'chromosome_name','start_position','end_position', 'entrezgene'),filters = 'affy_hg_u133_plus_2', values = probeID, mart = mart)
 
 symbols <- unique(gene_tab$hgnc_symbol)
-symbolshaha <- symbols[which(symbols != "")]
+symbols_sig <- symbols[which(symbols != "")]
 
-write.table(symbolshaha, file = "DE_genelist.txt", quote = F, col.names = F, row.names = F)
+geneid <- unique(gene_tab$entrezgene)
+geneid_sig <- geneid[which(geneid != "")]
+
+write.table(symbols_sig, file = "DE_genelist_sig.txt", quote = F, col.names = F, row.names = F)
+write.table(geneid_sig, file = "DE_genelist_id_sig.txt", quote = F, col.names = F, row.names = F)
+
+
+## all genes
+allprobeID <- as.character(de_tab$X)
+
+gene_tab_all <- getBM(attributes=c('affy_hg_u133_plus_2', 'hgnc_symbol', 'chromosome_name','start_position','end_position', 'entrezgene'),filters = 'affy_hg_u133_plus_2', values = allprobeID, mart = mart)
+
+symbolsall <- unique(gene_tab_all$hgnc_symbol)
+allsymbols <- symbolsall[which(symbolsall != "")]
+
+geneid <- unique(gene_tab_all$entrezgene)
+geneid_all <- geneid[which(geneid != "")]
+
+write.table(allsymbols, file = "DE_genelist_all.txt", quote = F, col.names = F, row.names = F)
+write.table(geneid_all, file = "DE_genelist_id_all.txt", quote = F, col.names = F, row.names = F)
 
 
 
 
-#################################################
+
+
+##########################################################
+## convert genesymbol to gene id, we use biomart instead
+##########################################################
+library(mygene)
+
+queryMany(symbolshaha, scopes="symbol", fields=c("uniprot", "ensembl.gene", "reporter"), species="human")
+
+
+queryMany(allsymbols, scopes="symbol", fields=c("uniprot", "ensembl.gene", "reporter"), species="human")
+
+
+
+
+
+
+
+
+###############################################################
+## convert affy probe id to gene symbol, we use biomart instead
+###############################################################
 library(hgu95av2.db)
 
 Symbols = unlist(mget(probeID, hgu95av2SYMBOL, ifnotfound=NA))
