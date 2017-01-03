@@ -208,7 +208,56 @@ dim(test3)
 
 
 
+###################################################################
+## a real GEO case study
+###################################################################
+library("meshr")
 
+library("fdrtool") 
+library("MeSH.Hsa.eg.db")
+
+setwd("D:\\importantbk\\learning\\meshr\\limma_test")
+
+allgeneid <- read.csv(file = "DE_genelist_id_all.txt", sep = "\t", header = F, stringsAsFactor = F)$V1
+siggeneid <- read.csv(file = "DE_genelist_id_sig.txt", sep = "\t", header = F, stringsAsFactor = F)$V1
+
+
+
+
+# like topGO, it need to construct a MeSHHyperGParams object to specify all the parameters when do enrichment.
+meshParams <- new("MeSHHyperGParams", #
+                  geneIds = siggeneid, #
+                  universeGeneIds = allgeneid, #
+                  annotation = "MeSH.Hsa.eg.db", #
+                  category = "C", # like the classification of BP,MF,CC in GO
+                  database = "gene2pubmed", #can be gendoo, gene2pubmed or RBBH
+                  pvalueCutoff = 0.05, #
+                  pAdjust = "none") ## pAdjust is set to none because this is really a very limited example,most of the times we can set it to BH, QV or FDR.
+                  
+                  
+meshR <- meshHyperGTest(meshParams)             ## hypergeometry calculation of pvalue
+
+meshR                                           ## to see what kind of object the mesh is, is it like a GO?
+##MeSH enrichment analysis for category Diseases 
+##Annotation package used:  MeSH.Hsa.eg.db 
+##The correspondance is retrived from:  gendoo 
+##Number of MeSH terms identified:  9 
+
+head(summary(meshR))
+##       MESHID       Pvalue OddsRatio ExpCount Count Size              MESHTERM GENEID SOURCEID
+##15774 D009361 0.0002619206  3.942771 11.32673    21   33 Neoplasm Invasiveness   1576     <NA>
+##15775 D009361 0.0002619206  3.942771 11.32673    21   33 Neoplasm Invasiveness   6279     <NA>
+##15776 D009361 0.0002619206  3.942771 11.32673    21   33 Neoplasm Invasiveness   2778     <NA>
+##15777 D009361 0.0002619206  3.942771 11.32673    21   33 Neoplasm Invasiveness    894     <NA>
+##15778 D009361 0.0002619206  3.942771 11.32673    21   33 Neoplasm Invasiveness   2524     <NA>
+##15779 D009361 0.0002619206  3.942771 11.32673    21   33 Neoplasm Invasiveness   7306     <NA>
+
+
+result <- summary(meshR)[summary(meshR)$GENEID %in% siggeneid,]
+
+write.table(result, file = "MESH_result.txt",quote = F, row.names = F, col.names = T)
+
+save.abst(result)
 
 
 
