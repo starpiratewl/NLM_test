@@ -255,9 +255,55 @@ head(summary(meshR))
 
 result <- summary(meshR)[summary(meshR)$GENEID %in% siggeneid,]
 
-write.table(result, file = "MESH_result.txt",quote = F, row.names = F, col.names = T)
+write.table(result, file = "MESH_result.txt",quote = F, row.names = F, col.names = T, sep = "\t")
 
 save.abst(result)
+
+
+
+
+##################################
+## dealing with the mesh result
+##################################
+
+setwd("D:\\importantbk\\learning\\meshr\\limma_test")
+
+result_tab <- read.csv(file = "MESH_result.txt", sep = "\t", stringsAsFactor = F)
+
+
+geneid <- result_tab$GENEID
+
+library(biomaRt)
+
+mart <- useMart("ENSEMBL_MART_ENSEMBL", dataset = "hsapiens_gene_ensembl", host="www.ensembl.org")
+
+##genesymbol <- getBM(attributes=c('hgnc_symbol'),filters = 'entrezgene', values = geneid,mart = mart)
+genesymbol <- geneid
+
+for (i in 1:length(geneid)){
+  genesymbol[i] <- getBM(attributes=c('hgnc_symbol'),filters = 'entrezgene', values = as.character(geneid[i]),mart = mart)$hgnc_symbol
+}
+
+## view the overall distribution of pubmed papaers
+barplot(table(result_tab$MESHTERM))
+
+## view the distributions of MeSH terms containing over 100 pubmed papaers 
+over100 <- table(result_tab$MESHTERM)[table(result_tab$MESHTERM)>100]
+
+barplot(over100, ylim = c(-600,1500),names.arg=F)
+
+text(x = 1:length(over100), y = -200, labels = names(over100),cex =1, srt = 65)
+
+
+## view the terms by the means of pvalue
+test <- unique(result_tab[,c(1,2,3,4,5,6,7)])
+
+test_20 <- head(test,20)
+
+barplot(test_20$Pvalue,main="the most significant MeSH terms",xlab="P-value",horiz=TRUE,names=FALSE)
+
+text(-0.00000000000000001,1:20,test_20$MESHTERM,cex=0.8,xpd=T,srt=0,pos=4)
+
 
 
 
